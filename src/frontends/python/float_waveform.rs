@@ -829,8 +829,7 @@ impl FloatWaveform {
     #[args()]
     #[text_signature = "()"]
     pub fn numpy(&self, py: Python) -> Py<PyArray2<f32>> {
-        self.inner
-            .interleaved_samples()
+        (*(self.inner.interleaved_samples()))
             .to_owned()
             .into_pyarray(py)
             .reshape([

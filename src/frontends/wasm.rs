@@ -89,7 +89,8 @@ impl FloatWaveform {
     }
 
     pub fn interleavedSamples(&self) -> Float32Array {
-        Float32Array::from(self.inner.interleaved_samples())
+        let samples: &[f32] = &*self.inner.interleaved_samples();
+        Float32Array::from(samples)
     }
 
     pub fn frameRateHz(&self) -> u32 {

@@ -1,5 +1,4 @@
 use std::f32::consts::PI;
-
 use babycat::resample::lanczos::resample as lanczos_resample;
 use babycat::resample::libsamplerate::resample as libsamplerate_resample;
 use babycat::{FloatWaveform, Waveform};
@@ -108,13 +107,13 @@ fn benchmark_all_funcs(
 fn main() {
     let small_vector_1: Vec<f32> = vec![-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0];
     let sine_wave_1: Vec<f32> = make_sine_wave(512.0, 44100, 10);
-    let blippy_trance: Vec<f32> = FloatWaveform::from_file(
+    let blippy_trance_waveform = FloatWaveform::from_file(
         "audio-for-tests/blippy-trance/track.mp3",
         Default::default(),
     )
-    .unwrap()
-    .interleaved_samples()
-    .to_owned();
+    .unwrap();
+
+    let blippy_trance = &*(blippy_trance_waveform.interleaved_samples());
 
     benchmark_all_funcs("small_vector_1", 4, 8, 1, &small_vector_1);
     benchmark_all_funcs("sine_wave_1", 44100, 22050, 1, &sine_wave_1);

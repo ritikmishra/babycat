@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::Read;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +38,7 @@ fn get_sample(audio_buffer_ref: &AudioBufferRef, frame_idx: usize, channel_idx: 
 /// Represents a fixed-length audio waveform as a `Vec<f32>`.
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct FloatWaveform {
-    interleaved_samples: Vec<f32>,
+    interleaved_samples: Arc<Vec<f32>>,
     frame_rate_hz: u32,
     num_channels: u32,
     num_frames: u64,
@@ -52,7 +53,7 @@ impl From<crate::backend::int_waveform::IntWaveform> for FloatWaveform {
             .collect();
 
         FloatWaveform {
-            interleaved_samples: buffer,
+            interleaved_samples: Arc::new(buffer),
             frame_rate_hz: item.frame_rate_hz(),
             num_channels: item.num_channels(),
             num_frames: item.num_frames(),
@@ -519,7 +520,7 @@ impl FloatWaveform {
             frame_rate_hz: final_frame_rate_hz,
             num_channels,
             num_frames,
-            interleaved_samples: buffer,
+            interleaved_samples: Arc::new(buffer),
         })
     }
 
@@ -542,7 +543,7 @@ impl FloatWaveform {
             frame_rate_hz,
             num_channels,
             num_frames,
-            interleaved_samples: vec![0.0; (num_channels as u64 * num_frames) as usize],
+            interleaved_samples: Arc::new(vec![0.0; (num_channels as u64 * num_frames) as usize]),
         }
     }
 
@@ -605,12 +606,12 @@ impl FloatWaveform {
             self.frame_rate_hz,
             frame_rate_hz,
             self.num_channels,
-            &self.interleaved_samples,
+            &*self.interleaved_samples,
             resample_mode,
         )?;
         let num_frames = interleaved_samples.len() as u64 / self.num_channels as u64;
         Ok(Self {
-            interleaved_samples,
+            interleaved_samples: Arc::new(interleaved_samples),
             frame_rate_hz,
             num_channels: self.num_channels,
             num_frames,
@@ -630,7 +631,7 @@ impl FloatWaveform {
             Ok(w) => w,
             Err(_) => return Err(Error::UnknownEncodeError),
         };
-        for sample in &self.interleaved_samples {
+        for sample in &*self.interleaved_samples {
             let sample_result = writer.write_sample(*sample);
             if sample_result.is_err() {
                 return Err(Error::UnknownEncodeError);
@@ -656,7 +657,7 @@ impl FloatWaveform {
             Ok(w) => w,
             Err(_) => return Err(Error::UnknownEncodeError),
         };
-        for sample in &self.interleaved_samples {
+        for sample in &*self.interleaved_samples {
             let sample_result = writer.write_sample(*sample);
             if sample_result.is_err() {
                 return Err(Error::UnknownEncodeError);
@@ -694,7 +695,7 @@ impl crate::backend::waveform::Waveform<f32> for FloatWaveform {
     fn new(frame_rate_hz: u32, num_channels: u32, interleaved_samples: Vec<f32>) -> Self {
         let num_frames = interleaved_samples.len() as u64 / num_channels as u64;
         FloatWaveform {
-            interleaved_samples,
+            interleaved_samples: Arc::new(interleaved_samples),
             frame_rate_hz,
             num_channels,
             num_frames,
@@ -714,7 +715,7 @@ impl crate::backend::waveform::Waveform<f32> for FloatWaveform {
     }
 
     /// Returns of channel-interleaved samples.
-    fn interleaved_samples(&self) -> &[f32] {
-        &self.interleaved_samples
+    fn interleaved_samples(&self) -> Arc<Vec<f32>> {
+        Arc::clone(&self.interleaved_samples)
     }
 }

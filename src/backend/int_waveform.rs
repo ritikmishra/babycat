@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use crate::backend::sample_rescaling::f32_to_i16;
 use crate::backend::waveform::Waveform;
@@ -11,7 +12,7 @@ use serde::{Deserialize, Serialize};
 /// to work with a [FloatWaveform](crate::FloatWaveform).
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntWaveform {
-    interleaved_samples: Vec<i16>,
+    interleaved_samples: Arc<Vec<i16>>,
     frame_rate_hz: u32,
     num_channels: u32,
     num_frames: u64,
@@ -26,7 +27,7 @@ impl From<crate::backend::float_waveform::FloatWaveform> for IntWaveform {
             .collect();
 
         IntWaveform {
-            interleaved_samples: buffer,
+            interleaved_samples: Arc::new(buffer),
             frame_rate_hz: item.frame_rate_hz(),
             num_channels: item.num_channels(),
             num_frames: item.num_frames(),
@@ -52,7 +53,7 @@ impl crate::backend::waveform::Waveform<i16> for IntWaveform {
     fn new(frame_rate_hz: u32, num_channels: u32, interleaved_samples: Vec<i16>) -> Self {
         let num_frames = interleaved_samples.len() as u64 / num_channels as u64;
         IntWaveform {
-            interleaved_samples,
+            interleaved_samples: Arc::new(interleaved_samples),
             frame_rate_hz,
             num_channels,
             num_frames,
@@ -71,7 +72,7 @@ impl crate::backend::waveform::Waveform<i16> for IntWaveform {
         self.num_frames
     }
 
-    fn interleaved_samples(&self) -> &[i16] {
-        &self.interleaved_samples
+    fn interleaved_samples(&self) -> Arc<Vec<i16>> {
+        Arc::clone(&self.interleaved_samples)
     }
 }
